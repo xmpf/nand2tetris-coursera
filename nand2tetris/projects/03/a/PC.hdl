@@ -16,5 +16,21 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+
+    // Increment
+    Inc16(in=reg, out=plusone);
+
+    // consider load :> inc :> reset  as a 3bit number
+    // 000 -> reset
+    // 001 -> reset
+    // 010 -> plusone
+    // 011 -> reset
+    // 100 -> load
+    // 101 -> reset
+    // 110 -> load
+    // 111 -> reset
+    Mux8Way16(a=false, b=false, c=plusone, d=false, e=in, f=false, g=in, h=false, sel[2]=load, sel[1]=inc, sel[0]=reset, out=mux);
+
+    // Register
+    Register(in=mux, load=true, out=out, out=reg);
 }
