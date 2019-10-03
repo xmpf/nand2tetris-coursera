@@ -42,5 +42,35 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+    
+    // X => zx
+    // Multiplexer with sel[0]=zx, a=x, b=false
+    Mux16(a=x, b=false, sel[0]=zx, out=xmux);
+
+    // X => nx
+    // Multiplexer with sel[0]=nx, a=x, b=false
+    Not16(in=xmux, out=notxmux);
+    Mux16(a=xmux, b=notxmux, sel[0]=nx, out=xmux2);
+
+    // Y => zy
+    // Multiplexer with sel[0]=zy, a=x, b=false
+    Mux16(a=y, b=false, sel[0]=zy, out=ymux);
+
+    // Y => ny
+    // Multiplexer with sel[0]=nx, a=x, b=false
+    Not16(in=ymux, out=notymux);
+    Mux16(a=ymux, b=notymux, sel[0]=ny, out=ymux2);
+
+    // f, ng
+    Add16(a=xmux2, b=ymux2, out=xmuxADDymux);
+    And16(a=xmux2, b=ymux2, out=xmuxANDymux);
+    Mux16(a=xmuxANDymux, b=xmuxADDymux, sel=f, out=fmux);
+    Not16(in=fmux, out=notfmux);
+    Mux16(a=fmux, b=notfmux, sel=no, out=out, out[0..7]=lsb, out[8..15]=msb, out[15]=ng);
+    
+    // zr
+    Or8Way(in=lsb, out=iszero0);
+    Or8Way(in=msb, out=iszero1);
+    Or(a=iszero0, b=iszero1, out=iszero);
+    Not(in=iszero, out=zr);
 }
