@@ -11,13 +11,16 @@
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
+@CHECK
+0;JMP
+
 (LOAD_BASE_ADDR_1)
 @SCREEN // A = SCREEN = 16834
 D=A     // D => HOLDS THE BASE ADDRESS OF SCREEN MEMORY-MAP
 @ADDR   // TEMPORARY VARIABLE => WILL BE USED AS POINTER
 M=D     // RAM[ADDR] = 16384
 
-@8191   // *** IT MIGHT BE OFF BY ONE ***
+@8192   // *** IT MIGHT BE OFF BY ONE ***
 D=A     // LOAD #ROWS IN D
 @COUNTER
 M=D     // INITIALIZE COUNTER TO #ROWS
@@ -54,7 +57,7 @@ D=A     // D => HOLDS THE BASE ADDRESS OF SCREEN MEMORY-MAP
 @ADDR   // TEMPORARY VARIABLE => WILL BE USED AS POINTER
 M=D     // RAM[ADDR] = 16384
 
-@8191   // *** IT MIGHT BE OFF BY ONE ***
+@8192   // *** IT MIGHT BE OFF BY ONE ***
 D=A     // LOAD #ROWS IN D
 @COUNTER
 M=D     // INITIALIZE COUNTER TO #ROWS
