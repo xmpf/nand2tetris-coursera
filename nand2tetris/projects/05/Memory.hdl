@@ -26,6 +26,47 @@ CHIP Memory {
     IN in[16], load, address[15];
     OUT out[16];
 
-    PARTS:
-    // Put your code here:
+    // ADDRESS = 16 BIT
+    // EG: 0x1234 =   0001  0010  0011  0100
+    // BIT POSITIONS 15..12 11..8 7..4 3..0    
+
+    PARTS:                                 // 000    001       010     011      100       101      110      111
+    DMux8Way(in=load, sel=address[12..14], a=load0, b=load1, c=load2, d=load3, e=load4, f=load5, g=load6, f=load7);
+    // 000 => load0 => RAM4K    (RAM)
+    // 001 => load1 => RAM4K    (RAM)
+    // 010 => load2 => RAM4K    (RAM)
+    // 011 => load3 => RAM4K    (RAM)
+    // 100 => load4 => Screen   (SCREEN_LOW)
+    // 101 => load5 => Screen   (SCREEN_HIGH)
+    // 110 => load6 => Keyboard (KBD)
+
+    // RAM => 0x0000 .. 0x3FFF
+    // SELECTED IF BIT[14] = 0
+    // RAM4K(in=in, load=load0, address=address[0..11], out=outRAM0);  // 000
+    // RAM4K(in=in, load=load1, address=address[0..11], out=outRAM1);  // 001
+    // RAM4K(in=in, load=load2, address=address[0..11], out=outRAM2);  // 010
+    // RAM4K(in=in, load=load3, address=address[0..11], out=outRAM3);  // 011
+    Or8Way(in[0]=load0, in[1]=load1, in[2]=load2, in[3]=load3, in[4..7]=false, out=loadRAM);
+    RAM16K(in=in, load=loadRAM, address=address[0..13], out=outRAM);
+
+    // SCREEN MEMORY MAP => 0x4000 .. 0x5FFF
+    // 00000100_0_0_0 .. 00000101_255_255_255
+    // SELECT CHIPS ACCORDING TO BITS[14:12]
+    Or(a=load4, b=load5, out=selectSCREEN);
+    Screen(in=in, load=selectSCREEN, address=address[0..12], out=outSCREEN);
+
+    // KBD REGISTER
+    // SELECTED WHEN BITS[14:13] = 11
+    Keyboard(out=outKBD);
+
+    // Multiplexer to select valid output
+    Mux8Way16(a=outRAM, b=outRAM, c=outRAM, d=outRAM, e=outSCREEN, f=outSCREEN, g=outKBD, h=false, sel=address[12..14], out=out);
+    //            000        001        010        011        100          101         110      111
+
+    // NOTE:
+    // I forgot about Keyboard and Screen builtins
+    // and implemented them using Register and RAM4K respectively
+    // but I couldn't see the GUI side effects
+    // that's why is a bit more complicated than it should be
+    // as I patched it instead of rebuild it.
 }

@@ -39,5 +39,92 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // 2 categories of C-instructions
+    // instruction[12]
+    // a = 0    => computations using A register
+    // a = 1    => computations using M=RAM[A] register
+
+    Mux16(a=Areg, b=inM, sel=instruction[12], out=AmuxM); // DONE
+
+    // 6 bits to denote the function
+    // instruction[6..11]
+    // c1 c2 c3 c4 c5 c6
+
+
+    // according to instruction MSB (instruction[15])
+    // 0 => A-instruction
+    // 1 => C-instruction
+    // define the appropriate functions
+    // from the table
+
+    // Set load bits on according to destination bits
+    // instruction[3..5]
+    // null => 000
+    // M    => 001
+    // D    => 010
+    // MD   => 011
+    // A    => 100
+    // AM   => 101
+    // AD   => 110
+    // AMD  => 111
+
+    // MUX to select what to load into A reg
+    Not(in=instruction[15], out=instrA);
+    Mux16(a=ALUout, b=instruction, sel=instrA, out=mux0); // DONE
+
+    // ARegister
+    // To load A register, it has to be either
+    // an A-instruction
+    // or a C-instruction with destination A enabled
+    And(a=instruction[15], b=instruction[5], out=AisDest);
+    Or(a=instrA, b=AisDest, out=loadA);
+    ARegister(in=mux0, load=loadA, out=Areg, out[0..14]=addressM);   // DONE
+    
+    // DRegister
+    // To load D register, it has to be C-instruction with destination D enabled
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=ALUout, load=loadD, out=Dreg);    // DONE
+
+    // ALU
+    // inputs:  x,y,zx,zy,nx,ny,f,no
+    // outputs: zr,ng,out
+    ALU(x=Dreg, y=AmuxM, zx=instruction[11], nx=instruction[10],
+                         zy=instruction[9], ny=instruction[8],
+                         f=instruction[7], no=instruction[6], 
+                         zr=zeroFlag, ng=negFlag, out=outM, out=ALUout);
+
+    // writeM signal
+    // It has to be a C-instruction with M enabled
+    And(a=instruction[15], b=instruction[3], out=writeM);   // Done
+
+    // Jump bits: instruction[0..2]
+    // null => 000  => no jump
+    // JGT  => 001  => out  > 0
+    // JEQ  => 010  => out == 0
+    // JGE  => 011  => out >= 0
+    // JLT  => 100  => out <  0
+    // JNE  => 101  => out != 0
+    // JLE  => 110  => out <= 0
+    // JMP  => 111  => unconditional jump
+
+    And(a=instruction[0], b=instruction[2], out=j0andj2);
+    And(a=j0andj2, b=instruction[1], out=jmp);  // JMP
+    And(a=zeroFlag, b=instruction[1], out=jeq); // JEQ
+    
+    Or(a=negFlag, b=zeroFlag, out=leqZero);     // <= 0
+    Not(in=leqZero, out=posFlag);               // > 0
+    And(a=posFlag, b=instruction[0], out=jgt);  // JGT
+    And(a=negFlag, b=instruction[2], out=jlt);  // JLT
+
+    Or(a=jeq, b=jlt, out=jle);  // JLE
+    Or(a=jeq, b=jgt, out=jge);  // JGE
+    Or(a=jle, b=jgt, out=jumpA);
+
+    // PC Register
+    // To load PC it must be either
+    // unconditional jump
+    // or satisfying conditional jump
+    And(a=instruction[15], b=jumpA, out=loadPC);
+    Not(in=loadPC, out=incPC);
+    PC(in=Areg, load=loadPC, inc=incPC, reset=reset, out[0..14]=pc);
 }
